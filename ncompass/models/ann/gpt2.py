@@ -13,6 +13,8 @@ def get_hf_pipeline(size: str = None, model: str = None, device: int = 0):
         else: 
             nclog.ERROR("Invalid model size passed. Valid sizes are: medium, large, xl",\
                         ValueError)
+    else:
+        return get_hf_pipeline_base(device)
             
 def get_hf_pipeline_base(device: int = 0):
     return nc_model_utils.get_model_hf_pipeline("gpt2", device)
