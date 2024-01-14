@@ -1,18 +1,10 @@
 import json
 import torch
 import numpy as np
-from typing import Type, Optional
 from torch.nn import functional as F
 
 import ncompass.internal.logging as nclog
-
-from transformers.tokenization_utils_base import PreTrainedTokenizerBase
-
-#TODO: Should be able to move this to a more generic location
-class NCTokenizer():
-    def __init__(self):
-        self.tokenizer: Optional[Type[PreTrainedTokenizerBase]] = None
-        return
+from ncompass.internal.models import NCTokenizer
 
 # === Imported code from ridgerchu/SpikeGPT (src/utils.py)
 class SpikeGPTTokenizer(NCTokenizer):

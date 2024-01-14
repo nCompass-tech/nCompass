@@ -38,7 +38,7 @@ def WARNING(msg: str, logger_type: str = DETAILED) -> None:
 
 def ERROR(\
         msg: str\
-        , exception: Optional[Type[Exception]]= None\
+        , exception: Optional[Type[Exception]] = None\
         , logger_type: str = DETAILED) -> None:
     logger = pylog.getLogger(logger_type)
     logger.error(msg)
