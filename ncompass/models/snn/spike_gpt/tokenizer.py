@@ -3,18 +3,19 @@ import torch
 import numpy as np
 from typing import Type, Optional
 from torch.nn import functional as F
+
 import ncompass.internal.logging as nclog
 
 from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 
 #TODO: Should be able to move this to a more generic location
-class ncTokenizer():
+class NCTokenizer():
     def __init__(self):
         self.tokenizer: Optional[Type[PreTrainedTokenizerBase]] = None
         return
 
 # === Imported code from ridgerchu/SpikeGPT (src/utils.py)
-class SpikeGPTTokenizer(ncTokenizer):
+class SpikeGPTTokenizer(NCTokenizer):
     def __init__(self, WORD_NAME, UNKNOWN_CHAR='\ue083'):
         if 'list' in str(type(WORD_NAME)):
             self.charMode = False
@@ -72,7 +73,7 @@ class SpikeGPTTokenizer(ncTokenizer):
 
         return torch.multinomial(probs, num_samples=1)[0]
 
-def tokenizer_check(tokenizer: ncTokenizer, mode: str) -> None:
+def tokenizer_check(tokenizer: NCTokenizer, mode: str) -> None:
     if mode == 'pile':
         if (tokenizer.tokenizer.decode([187]) != '\n'):
             nclog.ERROR("Pile tokenizer does not decode 187 to new-line character!",
@@ -80,7 +81,3 @@ def tokenizer_check(tokenizer: ncTokenizer, mode: str) -> None:
 # =======================================================
 
 # === Newly written code ================================
-def get_tokenizer(word_name: str, unknown_char: str, token_mode: str) -> ncTokenizer:
-    tok = SpikeGPTTokenizer(word_name, unknown_char)
-    tokenizer_check(tok, token_mode)
-    return tok
