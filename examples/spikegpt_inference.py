@@ -1,10 +1,12 @@
+import os
 import ncompass as nc
 
 def test_inference():
     dataset = nc.loaders.huggingface.get_wikitext2("test") 
     pipeline = nc.models.ann.gpt2.get_hf_pipeline(size="medium")
     
-    tokenizer_json_path = "~/nCompass/ncompass/models/snn/spike_gpt/20B_tokenizer.json"
+    home_dir = os.getenv("HOME")
+    tokenizer_json_path = home_dir + "/nCompass/ncompass/models/snn/spike_gpt/20B_tokenizer.json"
     model_path = nc.models.download_from_hf(\
                       repo_id = "ridger/SpikeGPT-OpenWebText-216M"\
                     , filename = "SpikeGPT-216M.pth")
