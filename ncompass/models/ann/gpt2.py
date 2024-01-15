@@ -1,7 +1,11 @@
+import typing
 import ncompass.internal.logging as nclog
 import ncompass.internal.utils.models as nc_model_utils
 
-def get_hf_pipeline(size: str = None, model: str = None, device: int = 0):
+def get_hf_pipeline(\
+        size: typing.Optional[str] = None\
+        , model: typing.Optional[str] = None\
+        , device: int = 0):
     if model != None:
         nclog.INFO(f"Calling generic hf model loader. If {model} is not a gpt2 variant, then the"\
                     " returned model will not be gpt2 based.")
@@ -13,6 +17,8 @@ def get_hf_pipeline(size: str = None, model: str = None, device: int = 0):
         else: 
             nclog.ERROR("Invalid model size passed. Valid sizes are: medium, large, xl",\
                         ValueError)
+    else:
+        return get_hf_pipeline_base(device)
             
 def get_hf_pipeline_base(device: int = 0):
     return nc_model_utils.get_model_hf_pipeline("gpt2", device)
