@@ -23,7 +23,7 @@ def test_inference():
                     , top_p = 0.7\
                     , name_or_path = model_path)
     tokenizer = nc.models.get_tokenizer(sgpt_config)
-    encodings = nc.loaders.huggingface.get_encodings(dataset, tokenizer)
+    encodings = nc.loaders.huggingface.get_encodings(dataset, tokenizer.tokenizer)
     
     inference_model = nc.models.snn.spike_gpt.inference.SpikeGPT(sgpt_config)
 
