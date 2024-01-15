@@ -1,1 +1,1 @@
-from . import logging, utils, core, models, thrid_party
+from . import logging, utils, core, models, third_party
