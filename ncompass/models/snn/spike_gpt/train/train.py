@@ -299,6 +299,10 @@ class Block(nn.Module):
 
         return x
 
+class Output:
+    def __init__(self, loss, x):
+        self.loss = L2Wrap.apply(loss, x)
+
 class SpikeGPT(nn.Module):
     def __init__(self, config):
         super().__init__()
@@ -372,8 +376,9 @@ class SpikeGPT(nn.Module):
 
         return optimizer
 
-    def forward(self, input_ids, labels, token_type_ids, attention_mask, targets=None):
+    def forward(self, input_ids, labels, token_type_ids, attention_mask):
         input_ids = input_ids.to(self.emb.weight.device)
+        targets = labels
 
         self.step += 1
         B, T = input_ids.size()
@@ -397,4 +402,6 @@ class SpikeGPT(nn.Module):
         if targets is not None:
             loss = F.cross_entropy(x.view(-1, x.size(-1)), targets.to(x.device).view(-1))
 
-        return L2Wrap.apply(loss, x)
+        output = Output(loss, x)
+        return output
+
