@@ -30,10 +30,12 @@ def test_inference():
     inference_model = nc.models.snn.spike_gpt.inference.SpikeGPT(sgpt_config)
     
     slw_config = get_slw_config(
-              model=inference_model
-            , encodings=encodings
-            , ctx_len = -1
-            , model_type = "spikegpt") 
+              model = inference_model
+            , encodings = encodings
+            , ctx_len = 1024
+            , stride = 1
+            , num_warmup_tokens = 1024
+            , nc_model_type = "spikegpt") 
     ppl = run_sliding_window_perplexity(slw_config)
     print(ppl)
 

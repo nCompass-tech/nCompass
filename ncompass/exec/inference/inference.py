@@ -19,7 +19,8 @@ def _run_sliding_window_perplexity(
           , encodings: BatchEncoding
           , model_type: str = "gpt2"
           , stride: Optional[int] = None
-          , ctx_len: Optional[int] = None) -> Optional[float]:
+          , ctx_len: Optional[int] = None
+          , num_warmup_tokens: Optional[int] = None) -> Optional[float]:
     if model_type == "gpt2":
         return ann_sliding_window_perplexity(
                                           model
@@ -31,16 +32,17 @@ def _run_sliding_window_perplexity(
                                           model
                                         , encodings
                                         , stride
-                                        , ctx_len)
+                                        , ctx_len
+                                        , num_warmup_tokens)
     else:
         ERROR(f"Invalid model type {model_type}.", ValueError)
-
 
 def run_sliding_window_perplexity(config: SLWConfig) -> Optional[float]:
     return _run_sliding_window_perplexity(
                                   config.model
                                 , config.encodings
-                                , config.model_type
+                                , config.nc_model_type
                                 , config.stride
-                                , config.ctx_len)
+                                , config.ctx_len
+                                , config.num_warmup_tokens)
 

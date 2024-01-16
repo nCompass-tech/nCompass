@@ -7,7 +7,7 @@ from ncompass.exec.inference import \
         , get_exec_config
 
 def test_slw_config(model, encodings):
-    cfg = get_slw_config(model=model, encodings=encodings, stride=1)
+    cfg = get_slw_config(model=model, encodings=encodings, stride=1024)
     ppl = run_sliding_window_perplexity(cfg)
     return ppl
 

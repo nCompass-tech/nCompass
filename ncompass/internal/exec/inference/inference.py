@@ -16,17 +16,16 @@ def ann_sliding_window_perplexity(\
     ctx_len = model.config.n_positions if context_len is None else context_len
     _stride = model.config.n_positions if stride is None else stride
     num_tokens = encodings.input_ids.size(1)
-    INFO(f"Running ann perplexity with stride {_stride}")
 
     if (ctx_len == -1) or (ctx_len > model.config.n_positions):
         ERROR(f"ANN model cannot be run with provided context len {ctx_len} which is "\
               f"greater than model context len {model.config.n_positions}", ValueError)
 
-    neg_log_likelihood_list = []
     prev_ctx_end = 0
     device = model.device
     iter_space = range(0, num_tokens, _stride)
     pbar = tqdm(iter_space, total=len(iter_space))
+    neg_log_likelihood_list = []
     for ctx_start in pbar:
         ctx_end = min(ctx_start + ctx_len, num_tokens)
         encoding_start = ctx_start
@@ -44,21 +43,15 @@ def ann_sliding_window_perplexity(\
     ppl = torch.exp(torch.stack(neg_log_likelihood_list).mean())
     return float(ppl)
 
-def spikegpt_calculate_neg_log_likelihood(pred, gt):
-    pred_prob = F.softmax(pred, dim=-1)
-    # gt = labels[-1]
-    return -torch.log(pred_prob[gt])
-
 def spikegpt_run_warmup(model, tokens, num_tokens):
     state, mem1, mem2 = None, None, None
-    pbar = tqdm(range(num_tokens), total=num_tokens) 
+    pbar = tqdm(range(num_tokens-1), total=num_tokens-1) 
     pbar.set_description(f"Warming up spikegpt net with {num_tokens} tokens")
     for token_id in pbar:
         #TODO: consider what batch size (dim 1) implications are
         input_tokens = tokens[0, :token_id+1]
-        if token_id < (num_tokens-1):
-            state, mem1, mem2 = \
-                    model.forward(input_tokens, state, mem1, mem2, preprocess_only=True)
+        state, mem1, mem2 = \
+                model.forward(input_tokens, state, mem1, mem2, preprocess_only=True)
     return state, mem1, mem2 
 
 def spikegpt_warmup_model(
@@ -77,18 +70,18 @@ def spikegpt_run_single_window(
         , mem1 = None
         , mem2 = None
         , init_out = None) :
-    iter_space = range(0, window_end-window_offset)
+    iter_space = range(window_offset, window_end)
     num_tokens = len(iter_space)
-    # pbar = tqdm(iter_space, total=num_tokens, leave=False, disable=True)
-    # pbar.set_description("Running single window")
+    pbar = tqdm(iter_space, total=num_tokens, leave=False, disable=True)
     logits = [init_out] if init_out is not None else []
     labels = tokens[window_offset:] if init_out is not None else tokens[window_offset+1:]
     output, _state, _mem1, _mem2 = None, state, mem1, mem2
-    for token_id in iter_space:
+    for token_id in pbar:
         inputs = tokens[:token_id+1]
+        pbar.set_description(f"input size = {inputs.size(0)}")
         with torch.no_grad():
             output, _state, _mem1, _mem2 = model(inputs, _state, _mem1, _mem2)
-            if token_id < (num_tokens-1):
+            if token_id < (window_end-1):
                 logits.append(output)
     torch_logits = torch.stack(logits)
     ce_loss = F.cross_entropy(torch_logits, labels.to(torch_logits.device))
@@ -103,22 +96,22 @@ def spikegpt_run_sliding_window(
         , mem1 = None
         , mem2 = None
         , init_out = None):
-    neg_log_likelihood_list = []
     infinite_ctx = True if ctx_len == -1 else False
     window_len = 1 if ctx_len == -1 else ctx_len
     prev_window_end = 0
     num_tokens = tokens.size(1)
     iter_space = range(0, num_tokens, stride)
     pbar = tqdm(iter_space, total=len(iter_space)) 
+    neg_log_likelihood_list = []
     for window_start in pbar:
         window_end = min(window_start + window_len, num_tokens)
         encoding_start = 0 if infinite_ctx else window_start
         input_ids = tokens[0, encoding_start:window_end]
         init_out, state, mem1, mem2, loss = spikegpt_run_single_window(
-                                                model
+                                                  model
                                                 , input_ids
-                                                , prev_window_end - window_start
-                                                , window_end - window_start
+                                                , prev_window_end - encoding_start
+                                                , window_end - encoding_start
                                                 , state
                                                 , mem1
                                                 , mem2
@@ -135,16 +128,12 @@ def spikegpt_sliding_window_perplexity(\
           , encodings: BatchEncoding\
           , stride: Optional[int] = None\
           , context_len: Optional[int] = None\
-          , num_warmup_tokens: int = 1024) -> float:
-    if context_len is None: ctx_len = model.config.n_positions
-    elif context_len == -1: ctx_len = 1
-    else                  : ctx_len = context_len
-    # ctx_len = model.config.n_positions if context_len is None else context_len
+          , num_warmup_tokens: Optional[int] = None) -> float:
     _stride = 1 if stride is None else stride
-    num_tokens = encodings.input_ids.size(1)
-    INFO(f"Running snn perplexity with stride {_stride}")
+    nwt = 1024 if num_warmup_tokens is None else num_warmup_tokens
+    ctx_len = model.config.n_positions if context_len is None else context_len
 
-    if num_warmup_tokens == 0:
+    if nwt == 0:
         return spikegpt_run_sliding_window(model, encodings.input_ids, ctx_len, _stride)
      
     if num_warmup_tokens >= encodings.input_ids.size(1):
