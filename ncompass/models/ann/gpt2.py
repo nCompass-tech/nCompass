@@ -1,11 +1,13 @@
-import typing
+from typing import Optional
 import ncompass.internal.logging as nclog
 import ncompass.internal.utils.models as nc_model_utils
+from transformers.pipelines.base import Pipeline
 
 def get_hf_pipeline(\
-        size: typing.Optional[str] = None\
-        , model: typing.Optional[str] = None\
-        , device: int = 0):
+          size: Optional[str] = None\
+        , model: Optional[str] = None\
+        , device: int = 0) \
+        -> Optional[Pipeline]:
     if model != None:
         nclog.INFO(f"Calling generic hf model loader. If {model} is not a gpt2 variant, then the"\
                     " returned model will not be gpt2 based.")
@@ -20,14 +22,14 @@ def get_hf_pipeline(\
     else:
         return get_hf_pipeline_base(device)
             
-def get_hf_pipeline_base(device: int = 0):
+def get_hf_pipeline_base(device: int = 0) -> Pipeline:
     return nc_model_utils.get_model_hf_pipeline("gpt2", device)
 
-def get_hf_pipeline_medium(device: int = 0):
+def get_hf_pipeline_medium(device: int = 0) -> Pipeline:
     return nc_model_utils.get_model_hf_pipeline("gpt2-medium", device)
 
-def get_hf_pipeline_large(device: int = 0):
+def get_hf_pipeline_large(device: int = 0) -> Pipeline:
     return nc_model_utils.get_model_hf_pipeline("gpt2-large", device)
 
-def get_hf_pipeline_xl(device: int = 0):
+def get_hf_pipeline_xl(device: int = 0) -> Pipeline:
     return nc_model_utils.get_model_hf_pipeline("gpt2-xl", device)

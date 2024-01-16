@@ -4,11 +4,11 @@ from datasets import load_dataset, Dataset, DatasetDict, IterableDatasetDict, It
 
 import ncompass.internal.logging as nclog
 
-HFDataset = TypeVar("HFDataset", Dataset, DatasetDict, IterableDatasetDict, IterableDataset)
+HFDataset_t = TypeVar("HFDataset_t", Dataset, DatasetDict, IterableDatasetDict, IterableDataset)
 
 #TODO: Check how linked this is to Tokenizers and see exactly where to place this function
 def get_encodings(\
-        dataset: HFDataset\
+        dataset: HFDataset_t\
         , tokenizer\
         , dataset_type: str = "text"\
         , encoding_data_type: str = "pt") \

@@ -1,6 +1,7 @@
 import json
 import torch
 import numpy as np
+from typing import Optional 
 from torch.nn import functional as F
 
 import ncompass.internal.logging as nclog
@@ -8,19 +9,19 @@ from ncompass.internal.models import NCTokenizer
 
 # === Imported code from ridgerchu/SpikeGPT (src/utils.py)
 class SpikeGPTTokenizer(NCTokenizer):
-    def __init__(self, WORD_NAME, UNKNOWN_CHAR='\ue083'):
-        if 'list' in str(type(WORD_NAME)):
+    def __init__(self, word_name: str, unknown_char: str = '\ue083') -> None:
+        if 'list' in str(type(word_name)):
             self.charMode = False
-            if WORD_NAME[0] == WORD_NAME[1]:
+            if word_name[0] == word_name[1]:
                 from transformers import PreTrainedTokenizerFast
-                self.tokenizer = PreTrainedTokenizerFast(tokenizer_file=WORD_NAME[0])
+                self.tokenizer = PreTrainedTokenizerFast(tokenizer_file=word_name[0])
             else:
                 from transformers import GPT2TokenizerFast
-                self.tokenizer = GPT2TokenizerFast(WORD_NAME[0], WORD_NAME[1])
+                self.tokenizer = GPT2TokenizerFast(word_name[0], word_name[1])
             self.vocab_size = len(self.tokenizer)
         else:
             self.charMode = True
-            with open(WORD_NAME + '.json', "r", encoding="utf-16") as result_file:
+            with open(word_name + '.json', "r", encoding="utf-16") as result_file:
                 self.word_table = json.load(result_file)
 
             self.vocab_size = len(self.word_table)
@@ -28,19 +29,26 @@ class SpikeGPTTokenizer(NCTokenizer):
             self.stoi = {v: int(k) for k, v in self.word_table.items()}
             self.itos = {int(k): v for k, v in self.word_table.items()}
 
-            self.UNKNOWN_CHAR = self.stoi[UNKNOWN_CHAR]
+            self.unknown_char = self.stoi[unknown_char]
 
-    def refine_context(self, context):
-        context = context.strip().split('\n')
-        for c in range(len(context)):
-            context[c] = context[c].strip().strip('\u3000').strip('\r')
-        context = list(filter(lambda c: c != '', context))
-        context = '\n' + ('\n'.join(context)).strip()
+    def refine_context(self, ctxt: str) -> str:
+        context_list = ctxt.strip().split('\n')
+        for c in range(len(context_list)):
+            context_list[c] = context_list[c].strip().strip('\u3000').strip('\r')
+        context_list_filtered = list(filter(lambda c: c != '', context_list))
+        context = '\n' + ('\n'.join(context_list_filtered)).strip()
         if context == '':
             context = '\n'
         return context
 
-    def sample_logits(self, out, x, ctx_len, temperature=1.0, top_p_usual=None, top_p_newline=None):
+    def sample_logits(
+              self
+            , out: torch.Tensor
+            , x: torch.Tensor
+            , ctx_len: int
+            , temperature: float = 1.0
+            , top_p_usual: Optional[float] = None
+            , top_p_newline: Optional[float] = None) -> torch.Tensor:
         lastChar = int(x[-1])
 
         probs = F.softmax(torch.tensor(out), dim=-1)
