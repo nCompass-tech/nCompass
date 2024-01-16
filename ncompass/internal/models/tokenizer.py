@@ -6,4 +6,3 @@ from transformers.tokenization_utils_base import PreTrainedTokenizerBase
 class NCTokenizer():
     def __init__(self):
         self.tokenizer: Optional[Type[PreTrainedTokenizerBase]] = None
-        return
