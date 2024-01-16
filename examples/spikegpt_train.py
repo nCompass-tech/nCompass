@@ -36,11 +36,15 @@ def setup_config():
                             , use_cuda = True)
     return config
 
-def produce_dataloaders(config):
+def produce_dataloaders(config, train_batch_size, eval_batch_size):
     tokenizer = get_tokenizer(config)
     dataset   = train_loaders.load_dataset('wikitext', 'wikitext-2-raw-v1', tokenizer=tokenizer, num_workers=4)
-    val_dataloader   = train_loaders.get_dataloader(dataset['validation'], shuffle=True)
-    train_dataloader = train_loaders.get_dataloader(dataset['train'], shuffle=True)
+    val_dataloader   = train_loaders.get_dataloader(dataset['validation'],
+                                                    shuffle=True,
+                                                    batch_size=train_batch_size)
+    train_dataloader = train_loaders.get_dataloader(dataset['train'],
+                                                    shuffle=True,
+                                                    batch_size=eval_batch_size)
     return train_dataloader, val_dataloader
 
 def produce_model(config):
@@ -110,12 +114,12 @@ def run_train_batch(model,
         return completed_steps
     return completed_steps
     
-def run_validation_batch(model, accelerator, data, losses):
+def run_validation_batch(model, accelerator, data, per_device_eval_batch_size, losses):
     with torch.no_grad():
         outputs = model(**data)
     
     loss = outputs.loss
-    losses.append(accelerator.gather_for_metrics(loss.repeat(args.per_device_eval_batch_size)))
+    losses.append(accelerator.gather_for_metrics(loss.repeat(per_device_eval_batch_size)))
 
 def run_epoch(model,
               train_dataloader,
@@ -123,6 +127,7 @@ def run_epoch(model,
               accelerator,
               optimizer,
               lr_scheduler,
+              per_device_eval_batch_size,
               completed_steps,
               progress_bar):
     model.train()
@@ -140,6 +145,7 @@ def run_epoch(model,
         completed_steps = run_validation_batch(model,
                                                accelerator,
                                                batch_data,
+                                               per_device_eval_batch_size,
                                                losses)
     return completed_steps, losses
 
@@ -159,6 +165,7 @@ def run_epochs(start_epoch,
                accelerator,
                optimizer,
                lr_scheduler,
+               per_device_eval_batch_size,
                checkpoint_path,
                progress_bar):
     completed_steps = 0
@@ -170,6 +177,7 @@ def run_epochs(start_epoch,
                                             accelerator,
                                             optimizer,
                                             lr_scheduler,
+                                            per_device_eval_batch_size,
                                             completed_steps,
                                             progress_bar)
         losses = torch.cat(losses)
@@ -185,17 +193,19 @@ def main():
     num_warmup_steps = 0
     gradient_accumulation_steps = 1
     per_device_train_batch_size = 3
+    per_device_eval_batch_size = 12
     learning_rate = 6e-4
-    num_train_epochs = 3
     start_epoch = 0
-    total_epochs = 10
+    num_train_epochs = 3
     checkpoint_dir = '.checkpoint'
 
     set_seed(10)
     accelerator = Accelerator(gradient_accumulation_steps=gradient_accumulation_steps)
 
     config = setup_config()
-    train_dataloader, val_dataloader = produce_dataloaders(config)
+    train_dataloader, val_dataloader = produce_dataloaders(config,
+                                                           per_device_train_batch_size,
+                                                           per_device_eval_batch_size)
     model = produce_model(config)
     optimizer = produce_optimizer(model, learning_rate)
 
@@ -233,6 +243,7 @@ def main():
                accelerator,
                optimizer,
                lr_scheduler,
+               per_device_eval_batch_size,
                checkpoint_path,
                progress_bar)
 
