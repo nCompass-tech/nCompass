@@ -1,3 +1,1 @@
-from .inference import\
-          ann_sliding_window_perplexity\
-        , spikegpt_sliding_window_perplexity
+from .common import iterate_windows

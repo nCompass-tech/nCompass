@@ -4,9 +4,8 @@ from transformers import BatchEncoding
 
 from ncompass.internal.logging import ERROR
 from ncompass.internal.config.exec import SLWConfig, ExecConfig
-from ncompass.internal.exec.inference import \
-          ann_sliding_window_perplexity\
-        , spikegpt_sliding_window_perplexity
+import ncompass.internal.exec.inference.ann as ann
+import ncompass.internal.exec.inference.spikegpt as spikegpt
 
 def get_slw_config(**kwargs) -> SLWConfig:
     return SLWConfig(**kwargs)
@@ -22,13 +21,13 @@ def _run_sliding_window_perplexity(
           , ctx_len: Optional[int] = None
           , num_warmup_tokens: Optional[int] = None) -> Optional[float]:
     if model_type == "gpt2":
-        return ann_sliding_window_perplexity(
+        return ann.sliding_window_perplexity(
                                           model
                                         , encodings
                                         , stride
                                         , ctx_len)
     elif model_type == "spikegpt":
-        return spikegpt_sliding_window_perplexity(
+        return spikegpt.sliding_window_perplexity(
                                           model
                                         , encodings
                                         , stride
