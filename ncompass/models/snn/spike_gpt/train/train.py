@@ -41,7 +41,7 @@ T_MAX = 1024  # increase this if your ctx_len is long [NOTE: TAKES LOTS OF VRAM!
 
 from torch.utils.cpp_extension import load
 
-wkv_cuda = load(name="wkv", sources=["cuda/wkv_op.cpp", "cuda/wkv_cuda.cu"],
+wkv_cuda = load(name="wkv", sources=["/home/ec2-user/nCompass/ncompass/internal/third_party/cuda/wkv_op.cpp", "/home/ec2-user/nCompass/ncompass/internal/third_party/cuda/wkv_cuda.cu"],
                 verbose=True,
                 extra_cuda_cflags=['-res-usage', '--maxrregcount 60', '--use_fast_math', '-O3', '-Xptxas -O3',
                                    f'-DTmax={T_MAX}'])
@@ -156,8 +156,8 @@ class RWKV_TimeMix(torch.jit.ScriptModule):
         attn_sz = config.hidden_size
 
         with torch.no_grad():  # fancy init
-            ratio_0_to_1 = (layer_id / (config.num_hidden_layer - 1))  # 0 to 1
-            ratio_1_to_almost0 = (1.0 - (layer_id / config.num_hidden_layer))  # 1 to ~0
+            ratio_0_to_1 = (layer_id / (config.num_hidden_layers - 1))  # 0 to 1
+            ratio_1_to_almost0 = (1.0 - (layer_id / config.num_hidden_layers))  # 1 to ~0
 
             # fancy time_decay
             decay_speed = torch.ones(attn_sz)
@@ -225,7 +225,7 @@ class RWKV_ChannelMix(torch.jit.ScriptModule):
         self.time_shift = nn.ZeroPad2d((0, 0, 1, -1))
 
         with torch.no_grad():  # fancy init of time_mix
-            ratio_1_to_almost0 = (1.0 - (layer_id / config.num_hidden_layer))  # 1 to ~0
+            ratio_1_to_almost0 = (1.0 - (layer_id / config.num_hidden_layers))  # 1 to ~0
 
             x = torch.ones(1, 1, config.hidden_size)
             for i in range(config.hidden_size):
@@ -308,7 +308,7 @@ class SpikeGPT(nn.Module):
         self.emb = nn.Embedding(config.vocab_size, config.hidden_size)
 
         self.blocks = nn.Sequential(*[Block(config, i)
-                                      for i in range(config.num_hiddenum_hidden_layer)])
+                                      for i in range(config.num_hidden_layers)])
         self.atan = atan()
         self.ln_out = nn.LayerNorm(config.hidden_size)
         self.head = nn.Linear(config.hidden_size, config.vocab_size, bias=False)

@@ -60,4 +60,4 @@ class SpikeGPTConfig(ModelConfig):
     @property
     def RWKV_HEAD_QK_DIM(self):   return self.__RWKV_HEAD_QK_DIM
     @property
-    def use_cuda(self):           return self.__cuda
+    def use_cuda(self):           return self.__use_cuda

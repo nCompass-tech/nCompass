@@ -97,7 +97,7 @@ def get_dataloader(dataset: Dataset,
                    shuffle: bool = True,
                    collate_fn = default_data_collator,
                    batch_size: int = 8):
-    DataLoader(dataset,
-               shuffle=shuffle,
-               collate_fn=default_data_collator,
-               batch_size=batch_size)
+    return DataLoader(dataset,
+                      shuffle=shuffle,
+                      collate_fn=default_data_collator,
+                      batch_size=batch_size)

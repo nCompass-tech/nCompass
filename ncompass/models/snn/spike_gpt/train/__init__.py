@@ -1,1 +1,1 @@
-from .training import SpikeGPT
+from .train import SpikeGPT
