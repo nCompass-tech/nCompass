@@ -372,14 +372,14 @@ class SpikeGPT(nn.Module):
 
         return optimizer
 
-    def forward(self, idx, targets=None):
-        idx = idx.to(self.emb.weight.device)
+    def forward(self, input_ids, labels, token_type_ids, attention_mask, targets=None):
+        input_ids = input_ids.to(self.emb.weight.device)
 
         self.step += 1
-        B, T = idx.size()
+        B, T = input_ids.size()
         assert T <= self.ctx_len, "Cannot forward, because len(input) > model ctx_len."
 
-        x = self.atan(self.emb(idx))
+        x = self.atan(self.emb(input_ids))
         x = self.blocks(x)
         x = self.ln_out(x)
 
