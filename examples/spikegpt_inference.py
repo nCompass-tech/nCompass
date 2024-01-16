@@ -25,7 +25,7 @@ def get_model_config():
 def test_inference():
     dataset = nc.loaders.huggingface.get_wikitext2("test") 
     sgpt_config = get_model_config()
-    tokenizer = nc.models.get_tokenizer(sgpt_config)
+    tokenizer = nc.models.snn.spike_gpt.get_tokenizer(sgpt_config)
     encodings = nc.loaders.huggingface.get_encodings(dataset, tokenizer.tokenizer)
     inference_model = nc.models.snn.spike_gpt.inference.SpikeGPT(sgpt_config)
     
