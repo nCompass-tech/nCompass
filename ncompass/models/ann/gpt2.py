@@ -60,3 +60,5 @@ def get_hf_tokenizer(size: Optional[str] = None) -> PreTrainedTokenizerBase :
         model_name = f"gpt2-{size}"
     nclog.INFO(f"Loading hugginface pretrained tokenizer for {model_name}")
     return tokenizer.from_pretrained(model_name)
+
+

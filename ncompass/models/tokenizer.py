@@ -1,7 +1,8 @@
 from typing import Optional
 import ncompass.models.snn.spike_gpt as spike_gpt 
-from ncompass.internal.models import NCTokenizer, ModelConfig
+from ncompass.internal.models import NCTokenizer
 from ncompass.internal.logging import ERROR 
+from ncompass.internal.config.model import ModelConfig
 
 def get_tokenizer(config: ModelConfig) -> Optional[NCTokenizer]:
     if config.tokenizer_class == "SpikeGPT":

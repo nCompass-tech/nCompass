@@ -91,7 +91,7 @@ class SpikeGPT(nn.Module):
         torch.cuda.empty_cache()
 
     def LN(self, x, w):
-        return F.layer_norm(x, (self.config.n_embd,), weight=w.weight, bias=w.bias)
+        return F.layer_norm(x, (self.config.hidden_size,), weight=w.weight, bias=w.bias)
 
     def FF(self, x, state, i:int, time_mix_k, time_mix_r, kw, vw, rw, mem):
         if self.float_mode == "bf16":
@@ -184,7 +184,10 @@ class SpikeGPT(nn.Module):
                 pass
             
             if state == None:
-                state = torch.zeros(config.num_hidden_layers * 5, config.n_embd, device=self.device_type)
+                state = torch.zeros(
+                              config.num_hidden_layers * 5
+                            , config.hidden_size
+                            , device=self.device_type)
                 mem1 = []
                 mem2 = []
                 
