@@ -147,9 +147,9 @@ def run_epoch(model,
         loss = run_train_batch(model, accelerator, batch_data, optimizer, lr_scheduler)
         avg_loss = train_batch_loss_averaging(avg_loss, batch_num, loss)
 
-        progress_bar.set_description(f"training steps: {batch_num}/{len(train_dataloader)}
-                                       total training steps: {completed_steps + steps_completed}
-                                       ppl {math.exp(avg_loss):.2f}
+        progress_bar.set_description(f"training steps: {batch_num}/{len(train_dataloader)}\
+                                       total training steps: {completed_steps + steps_completed}\
+                                       ppl {math.exp(avg_loss):.2f}\
                                        loss {avg_loss:.4f}")
         if accelerator.sync_gradients:
             progress_bar.update(1)
@@ -162,15 +162,14 @@ def run_epoch(model,
     for batch_num, batch_data in enumerate(val_dataloader):
         loss = run_validation_batch(model, batch_data)
         losses.append(accelerator.gather_for_metrics(loss.repeat(per_device_eval_batch_size)))
-        progress_bar.set_description(f"eval steps: {batch_num}/{len(val_dataloader)}
-                                       ppl {math.exp(avg_loss):.2f}
+        progress_bar.set_description(f"eval steps: {batch_num}/{len(val_dataloader)}\
+                                       ppl {math.exp(avg_loss):.2f}\
                                        loss {avg_loss:.4f}")
     losses = torch.cat(losses)
     return steps_completed, losses, avg_loss
 
 def compute_perplexity(losses):
-    try:
-        eval_loss = torch.mean(losses)
+    try: eval_loss = torch.mean(losses)
         perplexity = math.exp(eval_loss)
     except OverflowError:
         perplexity = float("inf")
@@ -210,10 +209,9 @@ def run_training(start_epoch,
         progress_bar.set_description(f"epoch {epoch}: ppl {perplexity} eval_loss: {eval_loss}")
         print(f"{epoch}, {perplexity}, {avg_loss}, {eval_loss}", file=logger)
         
-        state_save_path = checkpoint_path.joinpath(f'epoch-{epoch}')
-        accelerator.save_state(state_save_path)
-        model_save_path = state_save_path.joinpath(f'model.pth')
-        accelerator.save_model(model_save_path)
+        save_path = checkpoint_path.joinpath(f'epoch-{epoch}')
+        accelerator.save_state(save_path)
+        accelerator.save_model(model, save_path, safe_serialization=False)
         completed_steps += steps_completed
     logger.close()
 
@@ -225,7 +223,7 @@ def main():
     per_device_eval_batch_size = 8
     learning_rate = 6e-4
     start_epoch = 0
-    num_train_epochs = 3
+    num_train_epochs = 10
     checkpoint_dir = '.checkpoint'
 
     set_seed(10)
