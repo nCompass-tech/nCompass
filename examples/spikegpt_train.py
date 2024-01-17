@@ -4,6 +4,8 @@ from ncompass.models import download_from_hf
 from ncompass.models.snn.spike_gpt.train import SpikeGPT
 from ncompass.models.snn.spike_gpt import SpikeGPTConfig, get_tokenizer
 
+from ncompass.internal.third_party.spikingjelly.clock_driven import functional
+
 from accelerate import Accelerator
 from accelerate.utils import set_seed
 
@@ -41,10 +43,10 @@ def produce_dataloaders(config, train_batch_size, eval_batch_size):
     dataset   = train_loaders.load_dataset('wikitext', 'wikitext-2-raw-v1', tokenizer=tokenizer, num_workers=4)
     val_dataloader   = train_loaders.get_dataloader(dataset['validation'],
                                                     shuffle=True,
-                                                    batch_size=train_batch_size)
+                                                    batch_size=eval_batch_size)
     train_dataloader = train_loaders.get_dataloader(dataset['train'],
                                                     shuffle=True,
-                                                    batch_size=eval_batch_size)
+                                                    batch_size=train_batch_size)
     return train_dataloader, val_dataloader
 
 def produce_model(config):
@@ -66,7 +68,7 @@ def produce_optimizer(model, learning_rate):
     return torch.optim.AdamW(optimizer_grouped_parameters, lr=learning_rate)
 
 def produce_lr_scheduler(optimizer, num_warmup_steps, gradient_accumulation_steps, max_train_steps):
-    lr_scheduler = get_scheduler(
+    return get_scheduler(
         name="cosine",
         optimizer=optimizer,
         num_warmup_steps=num_warmup_steps * gradient_accumulation_steps,
@@ -90,14 +92,21 @@ def resume_from_checkpoint(checkpoint_path, start_epoch, accelerator):
     accelerator.load_state(checkpoint_path)
 
 def run_train_batch(model,
-              accelerator,
-              data,
-              optimizer,
-              lr_scheduler,
-              completed_steps,
-              progress_bar):
+                    accelerator,
+                    data,
+                    it,
+                    optimizer,
+                    lr_scheduler,
+                    completed_steps,
+                    avg_loss,
+                    max_train_steps,
+                    progress_bar):
     with accelerator.accumulate(model):
-        outputs = model(**data)
+        with torch.set_grad_enabled(True):
+            outputs = model(**data)  # forward the model
+            functional.reset_net(model)
+
+        model.zero_grad()
         loss = outputs.loss
         # We keep track of the loss at each epoch
         accelerator.backward(loss)
@@ -109,14 +118,19 @@ def run_train_batch(model,
     if accelerator.sync_gradients:
         progress_bar.update(1)
         completed_steps += 1
+
+    curr_loss = loss.item()
+    if avg_loss < 0: avg_loss = curr_loss
+    else:
+        factor = 1 / (it + 1)
+        avg_loss = avg_loss * (1.0 - factor) + curr_loss * factor
     
-    if completed_steps >= args.max_train_steps:
-        return completed_steps
-    return completed_steps
+    return completed_steps, avg_loss
     
 def run_validation_batch(model, accelerator, data, per_device_eval_batch_size, losses):
-    with torch.no_grad():
+    with torch.set_grad_enabled(False):
         outputs = model(**data)
+        functional.reset_net(model)
     
     loss = outputs.loss
     losses.append(accelerator.gather_for_metrics(loss.repeat(per_device_eval_batch_size)))
@@ -127,27 +141,36 @@ def run_epoch(model,
               accelerator,
               optimizer,
               lr_scheduler,
-              per_device_eval_batch_size,
+              per_device_eval_batch_size,  
+              max_train_steps,
               completed_steps,
+              avg_loss,
               progress_bar):
     model.train()
     for batch_num, batch_data in enumerate(train_dataloader):
-        completed_steps = run_train_batch(model,
-                                          accelerator,
-                                          batch_data,
-                                          optimizer,
-                                          lr_scheduler,
-                                          completed_steps,
-                                          progress_bar)
+        completed_steps, avg_loss = run_train_batch(model,
+                                                    accelerator,
+                                                    batch_data,
+                                                    batch_num,
+                                                    optimizer,
+                                                    lr_scheduler,
+                                                    completed_steps,
+                                                    avg_loss,
+                                                    max_train_steps,
+                                                    progress_bar)
+        progress_bar.set_description(f"training steps: {batch_num}/{len(train_dataloader)} total training steps: {completed_steps} ppl {math.exp(avg_loss):.2f} loss {avg_loss:.4f}")
+        if completed_steps >= max_train_steps: break
     model.eval()
     losses = []
     for batch_num, batch_data in enumerate(val_dataloader):
-        completed_steps = run_validation_batch(model,
-                                               accelerator,
-                                               batch_data,
-                                               per_device_eval_batch_size,
-                                               losses)
-    return completed_steps, losses
+        run_validation_batch(model,
+                             accelerator,
+                             batch_data,
+                             per_device_eval_batch_size,
+                             losses)
+        progress_bar.set_description(f"eval steps: {batch_num}/{len(val_dataloader)} ppl {math.exp(avg_loss):.2f} loss {avg_loss:.4f}")
+    losses = torch.cat(losses)
+    return completed_steps, losses, avg_loss
 
 def compute_perplexity(losses):
     try:
@@ -166,34 +189,41 @@ def run_epochs(start_epoch,
                optimizer,
                lr_scheduler,
                per_device_eval_batch_size,
+               max_train_steps,
                checkpoint_path,
                progress_bar):
     completed_steps = 0
     logfile = checkpoint_path.joinpath('progress.log')
+    logger = open(logfile, 'w')
+    print(f'epoch, perplexity, train_loss, eval_loss', file=logger)
+    avg_loss = -1
     for epoch in range(start_epoch, num_training_epochs):
-        completed_steps, losses = run_epoch(model,
-                                            train_dataloader,
-                                            val_dataloader,
-                                            accelerator,
-                                            optimizer,
-                                            lr_scheduler,
-                                            per_device_eval_batch_size,
-                                            completed_steps,
-                                            progress_bar)
-        losses = torch.cat(losses)
+        completed_steps, losses, avg_loss = run_epoch(model,
+                                                      train_dataloader,
+                                                      val_dataloader,
+                                                      accelerator,
+                                                      optimizer,
+                                                      lr_scheduler,
+                                                      per_device_eval_batch_size,
+                                                      max_train_steps,
+                                                      completed_steps,
+                                                      avg_loss,
+                                                      progress_bar)
         eval_loss, perplexity = compute_perplexity(losses)
 
-        print(f"epoch {epoch}: perplexity: {perplexity} eval_loss: {eval_loss}", file=logfile)
+        progress_bar.set_description(f"epoch {epoch}: ppl {perplexity} eval_loss: {eval_loss}")
+        print(f"{epoch}, {perplexity}, {avg_loss}, {eval_loss}", file=logger)
         
-        save_path = checkpoint_path.joinpath(f'epoch-{epoch}.pth')
+        save_path = checkpoint_path.joinpath(f'epoch-{epoch}')
         accelerator.save_state(save_path)
+    logger.close()
 
 def main():
     # to be made into training config
     num_warmup_steps = 0
     gradient_accumulation_steps = 1
     per_device_train_batch_size = 3
-    per_device_eval_batch_size = 12
+    per_device_eval_batch_size = 8
     learning_rate = 6e-4
     start_epoch = 0
     num_train_epochs = 3
@@ -234,7 +264,10 @@ def main():
     if start_epoch != 0:
         resume_from_checkpoint(checkpoint_path, start_epoch, accelerator)
 
-    progress_bar = tqdm(range(max_train_steps), disable=not accelerator.is_local_main_process)
+    progress_bar = tqdm(range(max_train_steps),
+                        bar_format='{l_bar}{bar:10}{r_bar}{bar:-10b}',
+                        disable=not accelerator.is_local_main_process)
+                    
     run_epochs(start_epoch,
                num_training_epochs,
                model,
@@ -244,6 +277,7 @@ def main():
                optimizer,
                lr_scheduler,
                per_device_eval_batch_size,
+               max_train_steps,
                checkpoint_path,
                progress_bar)
 
