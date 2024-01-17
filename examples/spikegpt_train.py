@@ -210,8 +210,10 @@ def run_training(start_epoch,
         progress_bar.set_description(f"epoch {epoch}: ppl {perplexity} eval_loss: {eval_loss}")
         print(f"{epoch}, {perplexity}, {avg_loss}, {eval_loss}", file=logger)
         
-        save_path = checkpoint_path.joinpath(f'epoch-{epoch}')
-        accelerator.save_state(save_path)
+        state_save_path = checkpoint_path.joinpath(f'epoch-{epoch}')
+        accelerator.save_state(state_save_path)
+        model_save_path = state_save_path.joinpath(f'model.pth')
+        accelerator.save_model(model_save_path)
         completed_steps += steps_completed
     logger.close()
 
