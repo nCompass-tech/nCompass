@@ -1,7 +1,7 @@
 import ncompass.models.ann.gpt2 as gpt2
 from ncompass.loaders.huggingface import get_wikitext2, get_encodings
 from ncompass.exec.inference import \
-          _run_sliding_window_perplexity\
+        _run_sliding_window_perplexity\
         , run_sliding_window_perplexity\
         , get_slw_config\
         , get_exec_config
@@ -35,4 +35,4 @@ def test_pipeline_load():
 
 if __name__ == "__main__":
     test_inference()
-    # test_pipeline_load()
+    test_pipeline_load()

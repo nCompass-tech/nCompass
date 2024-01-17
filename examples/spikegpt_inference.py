@@ -5,10 +5,9 @@ from ncompass.exec.inference import run_sliding_window_perplexity, get_slw_confi
 def get_model_config():
     home_dir = os.getenv("HOME")
     tokenizer_json_path = home_dir + "/nCompass/ncompass/models/snn/spike_gpt/20B_tokenizer.json"
-    # model_path = nc.models.download_from_hf(\
-    #                   repo_id = "ridger/SpikeGPT-OpenWebText-216M"\
-    #                 , filename = "SpikeGPT-216M.pth")
-    model_path = "/home/ubuntu/spike-gpt/SpikeGPT-OpenWebText-216M/train1.pth"
+    model_path = nc.models.download_from_hf(\
+                      repo_id = "ridger/SpikeGPT-OpenWebText-216M"\
+                    , filename = "SpikeGPT-216M.pth")
     return nc.models.snn.spike_gpt.SpikeGPTConfig(\
                       token_mode = "pile"\
                     , word_name = [tokenizer_json_path, tokenizer_json_path]\
@@ -37,7 +36,7 @@ def test_inference():
             , num_warmup_tokens = 1024
             , nc_model_type = "spikegpt") 
     ppl = run_sliding_window_perplexity(slw_config)
-    print(ppl)
+    print(f"Perplexity = {ppl:.2f}")
 
 if __name__ == '__main__':
     test_inference()

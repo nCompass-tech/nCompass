@@ -11,12 +11,12 @@ from ncompass.internal.exec.inference import iterate_windows
 
 __all__ = ["sliding_window_perplexity"]
 
-def run_model(**kwargs):
-    model = kwargs["model"]
-    input_ids = kwargs["input_ids"]
-    window_end = kwargs["window_end"]
-    prev_window_end = kwargs["prev_window_end"]
-    
+def run_model(
+        model
+        , input_ids
+        , window_end
+        , prev_window_end
+        , **kwargs):
     trg_len = window_end - prev_window_end
     target_ids = input_ids.clone()
     target_ids[:-trg_len] = -100
@@ -24,9 +24,7 @@ def run_model(**kwargs):
         output = model(input_ids, labels=target_ids)
         neg_log_likelihood = output.loss
 
-    kwargs["output"] = output
-    
-    return neg_log_likelihood, kwargs
+    return neg_log_likelihood, {}
     
 def sliding_window_perplexity(\
             model: nn.Module\

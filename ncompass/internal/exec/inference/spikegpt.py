@@ -30,7 +30,7 @@ def warmup_model(
     state, mem1, mem2 = run_warmup(model, warmup_tokens, num_tokens)
     return model.forward(warmup_tokens[0,:], state, mem1, mem2)
             
-def _run_single_window(
+def iterate_tokens(
         model
         , tokens
         , window_offset
@@ -40,14 +40,11 @@ def _run_single_window(
         , mem2 = None
         , init_out = None) :
     iter_space = range(window_offset, window_end)
-    num_tokens = len(iter_space)
-    pbar = tqdm(iter_space, total=num_tokens, leave=False, disable=True)
     logits = [init_out] if init_out is not None else []
     labels = tokens[window_offset:] if init_out is not None else tokens[window_offset+1:]
     output, _state, _mem1, _mem2 = None, state, mem1, mem2
-    for token_id in pbar:
+    for token_id in iter_space:
         inputs = tokens[:token_id+1]
-        pbar.set_description(f"input size = {inputs.size(0)}")
         with torch.no_grad():
             output, _state, _mem1, _mem2 = model(inputs, _state, _mem1, _mem2)
             if token_id < (window_end-1):
@@ -56,24 +53,32 @@ def _run_single_window(
     ce_loss = F.cross_entropy(torch_logits, labels.to(torch_logits.device))
     return output, _state, _mem1, _mem2, ce_loss
 
-def run_single_window(**kwargs):
-    encoding_start = kwargs["encoding_start"]
-    window_end = kwargs["window_end"]
-    prev_window_end = kwargs["prev_window_end"]
-    init_out, state, mem1, mem2, loss = _run_single_window(
-                                              kwargs["model"]
-                                            , kwargs["input_ids"]
+def run_single_window(
+        model
+        , input_ids
+        , encoding_start
+        , window_end
+        , prev_window_end
+        , state
+        , mem1
+        , mem2
+        , init_out
+        , **kwargs):
+    init_out, state, mem1, mem2, loss = iterate_tokens(
+                                              model
+                                            , input_ids
                                             , prev_window_end - encoding_start
                                             , window_end - encoding_start
-                                            , kwargs["state"]
-                                            , kwargs["mem1"]
-                                            , kwargs["mem2"]
-                                            , kwargs["init_out"])
-    kwargs["init_out"] = init_out
-    kwargs["state"] = state
-    kwargs["mem1"] = mem1
-    kwargs["mem2"] = mem2
-    return loss, kwargs
+                                            , state
+                                            , mem1
+                                            , mem2
+                                            , init_out)
+    updated_vars = {}
+    updated_vars["init_out"] = init_out
+    updated_vars["state"] = state
+    updated_vars["mem1"] = mem1
+    updated_vars["mem2"] = mem2
+    return loss, updated_vars 
 
 def run_sliding_window(
           model
