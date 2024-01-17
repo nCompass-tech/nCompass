@@ -40,7 +40,10 @@ def setup_config():
 
 def produce_dataloaders(config, train_batch_size, eval_batch_size):
     tokenizer = get_tokenizer(config)
-    dataset   = train_loaders.load_dataset('wikitext', 'wikitext-2-raw-v1', tokenizer=tokenizer, num_workers=4)
+    dataset   = train_loaders.load_dataset('wikitext',
+                                           'wikitext-2-raw-v1',
+                                           tokenizer=tokenizer,
+                                           num_workers=4)
     val_dataloader   = train_loaders.get_dataloader(dataset['validation'],
                                                     shuffle=True,
                                                     batch_size=eval_batch_size)
@@ -91,16 +94,18 @@ def resume_from_checkpoint(checkpoint_path, start_epoch, accelerator):
     accelerator.print(f"Resumed from checkpoint: {checkpoint_path}")
     accelerator.load_state(checkpoint_path)
 
+def train_batch_loss_averaging(avg_loss, batch_num, loss):
+    if avg_loss < 0: avg_loss = loss
+    else:
+        factor = 1 / (batch_num + 1)
+        avg_loss = avg_loss * (1.0 - factor) + loss * factor
+    return avg_loss
+
 def run_train_batch(model,
                     accelerator,
                     data,
-                    it,
                     optimizer,
-                    lr_scheduler,
-                    completed_steps,
-                    avg_loss,
-                    max_train_steps,
-                    progress_bar):
+                    lr_scheduler):
     with accelerator.accumulate(model):
         with torch.set_grad_enabled(True):
             outputs = model(**data)  # forward the model
@@ -115,25 +120,15 @@ def run_train_batch(model,
         optimizer.zero_grad()
     
     # Checks if the accelerator has performed an optimization step behind the scenes
-    if accelerator.sync_gradients:
-        progress_bar.update(1)
-        completed_steps += 1
-
     curr_loss = loss.item()
-    if avg_loss < 0: avg_loss = curr_loss
-    else:
-        factor = 1 / (it + 1)
-        avg_loss = avg_loss * (1.0 - factor) + curr_loss * factor
     
-    return completed_steps, avg_loss
+    return curr_loss
     
-def run_validation_batch(model, accelerator, data, per_device_eval_batch_size, losses):
+def run_validation_batch(model, data):
     with torch.set_grad_enabled(False):
         outputs = model(**data)
         functional.reset_net(model)
-    
-    loss = outputs.loss
-    losses.append(accelerator.gather_for_metrics(loss.repeat(per_device_eval_batch_size)))
+    return outputs.loss
 
 def run_epoch(model,
               train_dataloader,
@@ -147,30 +142,31 @@ def run_epoch(model,
               avg_loss,
               progress_bar):
     model.train()
+    steps_completed = 0
     for batch_num, batch_data in enumerate(train_dataloader):
-        completed_steps, avg_loss = run_train_batch(model,
-                                                    accelerator,
-                                                    batch_data,
-                                                    batch_num,
-                                                    optimizer,
-                                                    lr_scheduler,
-                                                    completed_steps,
-                                                    avg_loss,
-                                                    max_train_steps,
-                                                    progress_bar)
-        progress_bar.set_description(f"training steps: {batch_num}/{len(train_dataloader)} total training steps: {completed_steps} ppl {math.exp(avg_loss):.2f} loss {avg_loss:.4f}")
-        if completed_steps >= max_train_steps: break
+        loss = run_train_batch(model, accelerator, batch_data, optimizer, lr_scheduler)
+        avg_loss = train_batch_loss_averaging(avg_loss, batch_num, loss)
+
+        progress_bar.set_description(f"training steps: {batch_num}/{len(train_dataloader)}
+                                       total training steps: {completed_steps + steps_completed}
+                                       ppl {math.exp(avg_loss):.2f}
+                                       loss {avg_loss:.4f}")
+        if accelerator.sync_gradients:
+            progress_bar.update(1)
+            steps_completed += 1
+
+        if int(completed_steps + steps_completed) >= max_train_steps: break
+
     model.eval()
     losses = []
     for batch_num, batch_data in enumerate(val_dataloader):
-        run_validation_batch(model,
-                             accelerator,
-                             batch_data,
-                             per_device_eval_batch_size,
-                             losses)
-        progress_bar.set_description(f"eval steps: {batch_num}/{len(val_dataloader)} ppl {math.exp(avg_loss):.2f} loss {avg_loss:.4f}")
+        loss = run_validation_batch(model, batch_data)
+        losses.append(accelerator.gather_for_metrics(loss.repeat(per_device_eval_batch_size)))
+        progress_bar.set_description(f"eval steps: {batch_num}/{len(val_dataloader)}
+                                       ppl {math.exp(avg_loss):.2f}
+                                       loss {avg_loss:.4f}")
     losses = torch.cat(losses)
-    return completed_steps, losses, avg_loss
+    return steps_completed, losses, avg_loss
 
 def compute_perplexity(losses):
     try:
@@ -180,7 +176,7 @@ def compute_perplexity(losses):
         perplexity = float("inf")
     return eval_loss, perplexity
 
-def run_epochs(start_epoch,
+def run_training(start_epoch,
                num_training_epochs,
                model,
                train_dataloader,
@@ -198,7 +194,7 @@ def run_epochs(start_epoch,
     print(f'epoch, perplexity, train_loss, eval_loss', file=logger)
     avg_loss = -1
     for epoch in range(start_epoch, num_training_epochs):
-        completed_steps, losses, avg_loss = run_epoch(model,
+        steps_completed, losses, avg_loss = run_epoch(model,
                                                       train_dataloader,
                                                       val_dataloader,
                                                       accelerator,
@@ -216,6 +212,7 @@ def run_epochs(start_epoch,
         
         save_path = checkpoint_path.joinpath(f'epoch-{epoch}')
         accelerator.save_state(save_path)
+        completed_steps += steps_completed
     logger.close()
 
 def main():
@@ -258,7 +255,8 @@ def main():
                                 gradient_accumulation_steps,
                                 num_train_epochs)
 
-    total_batch_size = per_device_train_batch_size * accelerator.num_processes * gradient_accumulation_steps
+    total_batch_size = \
+            per_device_train_batch_size * accelerator.num_processes * gradient_accumulation_steps
 
     checkpoint_path = setup_checkpointing(checkpoint_dir)
     if start_epoch != 0:
@@ -268,7 +266,7 @@ def main():
                         bar_format='{l_bar}{bar:10}{r_bar}{bar:-10b}',
                         disable=not accelerator.is_local_main_process)
                     
-    run_epochs(start_epoch,
+    run_training(start_epoch,
                num_training_epochs,
                model,
                train_dataloader,
