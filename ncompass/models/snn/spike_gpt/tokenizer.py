@@ -1,4 +1,5 @@
-from ncompass.internal.models import NCTokenizer, ModelConfig
+from ncompass.internal.models import NCTokenizer
+from ncompass.internal.config.model import ModelConfig
 from ncompass.internal.models.snn.spike_gpt import SpikeGPTTokenizer, spikegpt_tokenizer_check
 
 def _get_tokenizer(word_name: str,
