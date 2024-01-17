@@ -169,7 +169,8 @@ def run_epoch(model,
     return steps_completed, losses, avg_loss
 
 def compute_perplexity(losses):
-    try: eval_loss = torch.mean(losses)
+    try:
+        eval_loss = torch.mean(losses)
         perplexity = math.exp(eval_loss)
     except OverflowError:
         perplexity = float("inf")
@@ -223,7 +224,7 @@ def main():
     per_device_eval_batch_size = 8
     learning_rate = 6e-4
     start_epoch = 0
-    num_train_epochs = 10
+    num_train_epochs = 5
     checkpoint_dir = '.checkpoint'
 
     set_seed(10)
