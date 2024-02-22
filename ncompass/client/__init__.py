@@ -1,1 +1,1 @@
-from .client import nCompass
+from .client import nCompass, nCompassOLOC
