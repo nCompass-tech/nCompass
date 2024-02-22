@@ -1,4 +1,3 @@
-import time
 from ncompass.client import nCompass
 
 # The client will automatically read the API key from the environment variable passed here.

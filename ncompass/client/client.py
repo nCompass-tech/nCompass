@@ -1,6 +1,4 @@
 import os
-import time
-import httpx
 from typing import Optional
 
 import ncompass.client.functional as F
