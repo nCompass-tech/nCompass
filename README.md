@@ -13,7 +13,21 @@ We're working on automating the process for you to select a model of your choice
 key, but for now please email either adityarajagopal@ncompass.tech or diederikvink@ncompass.tech to
 be onboarded and provided with your API key. Thanks!
 
-## Hello World
+## One-Line-Of-Code (OLOC)
+We strive to make sure that all our capabilities can truly be exposed to you with exactly one line
+of code. Below is an example of how you would do that with us for streaming prompt complettion.
+```
+from ncompass.client import nCompassOLOC
+
+prompt = 'Give me 5 tools I can use to accelerate inference of my ML model?'
+for i in range(3):
+    ttft = nCompassOLOC().complete_prompt('<api_key>', prompt, max_tokens = 300, temperature = 0.5
+                                          , top_p = 0.9, stream = True, pprint = True)
+    print(f'ttft = {ttft*1000:.2f}ms')
+```
+The section below unwraps the code a bit more. It is still simple, but not quite OLOC'd.
+
+## More fine grained control 
 The following code (also found in examples/hello_world.py) sets up an nCompass client, parameters 
 and calls the complete_prompt API. Our API returns a streaming iterator (response_iterator) and 
 we also provide a print_prompt function which can print out the stream.
