@@ -1,2 +1,9 @@
 # ncompass
-A software stack built to make the accel of large scale AI models on both GPU and Neuromorphic hardware. With strong PyTorch and Huggingface integration, this is your one-stop shop for comparing and executing ANN and SNN models.
+A One-Line-Of-Code (OLOC) API that makes it easy for anyone to access low-latency open-source or
+custom AI models. This repo has some examples of the various ways in which you can use our API. 
+
+## Installing
+You can install our package via pip with the following command:  
+
+## Hello World
+
