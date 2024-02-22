@@ -1,0 +1,22 @@
+[project]
+name = "ncompass"
+version = "0.0.1"
+authors = [
+  { name="nCompass Technologies Inc.", email="admin@ncompass.tech" },
+]
+description = "A package for One-Line-Of-Code (OLOC) accelerate AI model hosting and inference"
+readme = "README.md"
+requires-python = ">=3.11"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "httpx>=0.27.0",
+    "aiohttp>=3.9.3"
+]
+
+[project.urls]
+Homepage = "https://github.com/nCompass-tech/nCompass"
+Issues = "https://github.com/nCompass-tech/nCompass/issues"
