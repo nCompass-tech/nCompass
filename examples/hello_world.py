@@ -10,7 +10,7 @@ params = {'max_tokens':    300 # max output tokens requested
           , 'stream':      True}
 prompt = 'Give me 5 tools I can use to accelerate inference of my ML model?'
 # complete_prompt returns a streaming iterator that can then be read in a loop to extract the
-# reponse
+# response
 response_iterator = client.complete_prompt(prompt, **params)
 ttft = client.print_prompt(response_iterator)
 print(f'ttft = {ttft*1000:.2f}ms')
