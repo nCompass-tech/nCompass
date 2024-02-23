@@ -1,10 +1,10 @@
 [project]
 name = "ncompass"
-version = "0.0.2"
+version = "0.0.3"
 authors = [
   { name="nCompass Technologies Inc.", email="admin@ncompass.tech" },
 ]
-description = "A package for One-Line-Of-Code (OLOC) accelerate AI model hosting and inference"
+description = "An API built to enable one-line-of-code access to accelerated open-source and custom AI models. "
 readme = "README.md"
 requires-python = ">=3.11"
 classifiers = [
