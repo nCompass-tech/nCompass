@@ -28,11 +28,16 @@ async def async_post(url, headers, body, stream=True, verify=False):
                 response_len = 0
                 async for chunk, _ in response.content.iter_chunks():
                     try:
-                        data = json.loads(chunk.split(b'\0')[0].decode("utf-8"))
-                        res = data['text'][0]
-                        new_data = res[response_len:]
-                        response_len = len(res)
-                        yield new_data
+                        split_chunk = chunk.split(b'\0')
+                        decoded_chunk = split_chunk[0].decode('utf-8')
+                        try:
+                            data = json.loads(decoded_chunk)
+                            res = data['text'][0] 
+                            new_data = res[response_len:]
+                            response_len = len(res)
+                            yield new_data
+                        except Exception as e:
+                            yield ''
                     except Exception as e:
                         error_msg(str(e))
             else:

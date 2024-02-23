@@ -62,7 +62,7 @@ class nCompassOLOC():
         
         iterator = cls.client.complete_prompt(prompt, max_tokens, temperature, top_p, stream)
         if pprint: return F.print_prompt(iterator)
-        else:        return iterator
+        else:      return iterator
 
     @classmethod
     def print_response(cls, iterator):
