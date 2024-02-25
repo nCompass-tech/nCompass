@@ -3,6 +3,7 @@ from typing import Optional, Union, Generator
 
 import ncompass.client.functional as F
 from ncompass.errors import api_key_not_set
+from ncompass.network_utils import exec_url
 
 class nCompass():
     def __init__(self
@@ -12,7 +13,7 @@ class nCompass():
             ,'Cannot have both api_key and custom_env_var set'
 
         self.api_key = None
-        self.exec_url = 'api.ncompass.tech' 
+        self.exec_url = exec_url()
         
         if api_key is not None:          self.api_key = api_key
         elif custom_env_var is not None: self.api_key = os.environ.get(custom_env_var)

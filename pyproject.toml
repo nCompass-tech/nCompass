@@ -20,3 +20,7 @@ dependencies = [
 [project.urls]
 Homepage = "https://github.com/nCompass-tech/nCompass"
 Issues = "https://github.com/nCompass-tech/nCompass/issues"
+
+[project.scripts]
+nccli-start-session = 'ncompass.cli.start_session:main'
+nccli-stop-session = 'ncompass.cli.stop_session:main'
