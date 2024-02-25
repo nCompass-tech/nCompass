@@ -16,13 +16,16 @@ def complete_prompt(url
                     , temperature
                     , top_p
                     , stream):
-    return stream_prompt(url=url
-                        , miid=api_key
-                        , prompt=prompt
-                        , max_tokens=max_tokens
-                        , temperature=temperature
-                        , top_p=top_p
-                        , stream=stream)
+    get_stream = lambda : stream_prompt(url=url
+                                        , miid=api_key
+                                        , prompt=prompt
+                                       , max_tokens=max_tokens
+                                       , temperature=temperature
+                                       , top_p=top_p
+                                       , stream=stream)
+
+    if stream: return get_stream()
+    else:      return ''.join(res for res in get_stream())
     
 def print_prompt(response_iterator):
     ttft = -1

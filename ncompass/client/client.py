@@ -61,8 +61,8 @@ class nCompassOLOC():
             cls.client.wait_until_model_running()
         
         iterator = cls.client.complete_prompt(prompt, max_tokens, temperature, top_p, stream)
-        if pprint: return F.print_prompt(iterator)
-        else:      return iterator
+        if (stream and pprint): return F.print_prompt(iterator)
+        else:                   return iterator # prompt in case of stream=false else iterator 
 
     @classmethod
     def print_response(cls, iterator):
