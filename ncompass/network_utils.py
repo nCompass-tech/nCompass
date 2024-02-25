@@ -3,7 +3,7 @@ import asyncio
 import aiohttp
 
 def get(url, headers=None):
-    return httpx.get(f'https://{url}', headers=headers, veify=False)
+    return httpx.get(f'https://{url}', headers=headers, verify=False)
 
 def post_json(url, payload, headers=None):
     hdr = {'Content-Type': 'application/json'}
@@ -12,6 +12,6 @@ def post_json(url, payload, headers=None):
 
 async def async_streaming_post_json(url, payload, headers, handler):
     session = aiohttp.ClientSession()
-    response = await session.post(url, headers=headers, json=payload, ssl=False)
+    response = await session.post(f'https://{url}', headers=headers, json=payload, ssl=False)
     return (await handler(response))
 

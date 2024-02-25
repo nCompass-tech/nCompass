@@ -1,6 +1,15 @@
 import time
 from .run_prompt import stream_prompt
+from ncompass.network_utils import get
 from .model_health import check_model_health
+
+def start_model(url, api_key):
+    print(url)
+    print(api_key)
+    return get(f'{url}/start_model', {'Authorization': api_key})
+
+def stop_model(url, api_key):
+    return get(f'{url}/stop_model', {'Authorization': api_key})
 
 def model_is_running(url, api_key):
     return check_model_health(url, api_key).status_code == 200
@@ -35,4 +44,3 @@ def print_prompt(response_iterator):
         print(elem, end='', flush=True)
     print()
     return (ttft-start)
-

@@ -12,13 +12,19 @@ class nCompass():
             ,'Cannot have both api_key and custom_env_var set'
 
         self.api_key = None
-        self.exec_url = 'https://api.ncompass.tech' 
+        self.exec_url = 'api.ncompass.tech' 
         
         if api_key is not None:          self.api_key = api_key
         elif custom_env_var is not None: self.api_key = os.environ.get(custom_env_var)
         else:                            self.api_key = os.environ.get('NCOMPASS_API_KEY')
         
         if self.api_key is None: api_key_not_set(custom_env_var)
+
+    def start_model(self):
+        return F.start_model(self.exec_url, self.api_key) 
+    
+    def stop_model(self):
+        return F.stop_model(self.exec_url, self.api_key) 
 
     def model_is_running(self):
         return F.model_is_running(self.exec_url, self.api_key)
@@ -45,6 +51,23 @@ class nCompass():
 
 class nCompassOLOC():
     client = None
+
+    @classmethod
+    def start_client(cls, api_key):
+        if (cls.client is None) or (cls.client.api_key != api_key):
+            cls.client = nCompass(api_key = api_key)
+            print(f'Waiting for model {api_key} to start...')
+            cls.client.wait_until_model_running()
+
+    @classmethod
+    def start_model(cls, api_key):
+        cls.start_client(api_key)
+        return cls.client.start_model()
+    
+    @classmethod
+    def stop_model(cls, api_key):
+        cls.start_client(api_key)
+        return cls.client.stop_model()
     
     @classmethod
     def complete_prompt(cls
@@ -55,11 +78,7 @@ class nCompassOLOC():
                         , top_p = 0.9
                         , stream = True
                         , pprint = False) -> Union[float, Generator]:
-        if cls.client is None:
-            print(f'Waiting for model {api_key} to start...')
-            cls.client = nCompass(api_key = api_key)
-            cls.client.wait_until_model_running()
-        
+        cls.start_client(api_key)
         iterator = cls.client.complete_prompt(prompt, max_tokens, temperature, top_p, stream)
         if (stream and pprint): return F.print_prompt(iterator)
         else:                   return iterator # prompt in case of stream=false else iterator 
