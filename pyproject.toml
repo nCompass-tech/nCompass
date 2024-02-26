@@ -6,7 +6,7 @@ authors = [
 ]
 description = "An API built to enable one-line-of-code access to accelerated open-source and custom AI models. "
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.8"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
@@ -22,5 +22,6 @@ Homepage = "https://github.com/nCompass-tech/nCompass"
 Issues = "https://github.com/nCompass-tech/nCompass/issues"
 
 [project.scripts]
+nccli-help = 'ncompass.cli.help:main'
 nccli-start-session = 'ncompass.cli.start_session:main'
 nccli-stop-session = 'ncompass.cli.stop_session:main'
