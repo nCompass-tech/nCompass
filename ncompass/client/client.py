@@ -12,6 +12,8 @@ class nCompass():
         assert not ((api_key is not None) and (custom_env_var is not None))\
             ,'Cannot have both api_key and custom_env_var set'
 
+        # NOTE: nCompassOLOC only works as long as the only state that this class holds is api_key.
+        
         self.api_key = None
         self.exec_url = exec_url()
         
@@ -57,13 +59,13 @@ class nCompassOLOC():
     def start_client(cls, api_key):
         if (cls.client is None) or (cls.client.api_key != api_key):
             cls.client = nCompass(api_key = api_key)
-            print(f'Waiting for model {api_key} to start...')
-            cls.client.wait_until_model_running()
 
     @classmethod
     def start_session(cls, api_key):
         cls.start_client(api_key)
-        return cls.client.start_session()
+        cls.client.start_session()
+        print(f'Waiting for model {api_key} to start...')
+        cls.client.wait_until_model_running()
     
     @classmethod
     def stop_session(cls, api_key):
@@ -78,7 +80,7 @@ class nCompassOLOC():
                         , temperature = 0.5
                         , top_p = 0.9
                         , stream = True
-                        , pprint = False) -> Union[float, Generator]:
+                        , pprint = False) -> Union[None, Generator]:
         cls.start_client(api_key)
         iterator = cls.client.complete_prompt(prompt, max_tokens, temperature, top_p, stream)
         if (stream and pprint): return F.print_prompt(iterator)

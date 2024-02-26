@@ -6,11 +6,19 @@ from ncompass.network_utils import get
 from .model_health import check_model_health
 from ncompass.errors import model_not_started
 
+def start_stop_handler(response):
+    if (response.status_code == 200) or (response.status_code == 209): 
+        return True
+    elif (response.status_code == 400): 
+        raise RuntimeError('Internal server error, contact admin@ncompass.tech')
+    else: 
+        raise RuntimeError(response.text)
+
 def start_session(url, api_key):
-    return get(f'{url}/start_session', {'Authorization': api_key})
+    return start_stop_handler(get(f'{url}/start_session', {'Authorization': api_key}))
 
 def stop_session(url, api_key):
-    return get(f'{url}/stop_session', {'Authorization': api_key})
+    return start_stop_handler(get(f'{url}/stop_session', {'Authorization': api_key}))
 
 def model_is_running(url, api_key):
     response = check_model_health(url, api_key)
@@ -50,10 +58,5 @@ def complete_prompt(url
     else:      return ''.join(res for res in get_stream())
     
 def print_prompt(response_iterator):
-    ttft = -1
-    start = time.time()
-    for elem in response_iterator:
-        if ttft == -1: ttft = time.time() 
-        print(elem, end='', flush=True)
+    [print(elem, end='', flush=True) for elem in response_iterator]
     print()
-    return (ttft-start)
