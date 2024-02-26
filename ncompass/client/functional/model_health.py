@@ -1,10 +1,7 @@
-import httpx
+from ncompass.network_utils import post_json
 
 def check_model_health(url, api_key):
     url = f'{url}/health'
     body = {'miid': api_key}
-    req = httpx.post(url
-                     , headers={'Content-Type': 'application/json'}
-                     , json=body
-                     , verify=False)
-    return req
+    headers = {'Authorization': api_key}
+    return post_json(url, body, headers)

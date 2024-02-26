@@ -10,3 +10,9 @@ def api_key_not_set(custom_var = None):
         raise RuntimeError(\
                 'Env variable NCOMPASS_API_KEY needs to be set to the api key. ' 
                 'Alternatively, pass a custom variable.')
+
+def model_not_started(api_key):
+    msg = (f'Model {api_key} has not been started or is currently starting. '
+            'If you have started it, please wait and try again. '
+            'If not, please contact admin@ncompass.tech for support')
+    raise RuntimeError(msg)
