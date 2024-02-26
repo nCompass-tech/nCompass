@@ -1,6 +1,9 @@
 import httpx
 import aiohttp
 
+def exec_url():
+    return 'api.ncompass.tech'
+
 def get(url, headers=None):
     client = httpx.Client(timeout=20, verify=False)
     return client.get(f'https://{url}', headers=headers)
