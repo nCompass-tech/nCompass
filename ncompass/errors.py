@@ -12,7 +12,7 @@ def api_key_not_set(custom_var = None):
                 'Alternatively, pass a custom variable.')
 
 def model_not_started(api_key):
-    msg = (f'Model {api_key} has likely not been started or is starting. '
+    msg = (f'Model {api_key} has not been started or is currently starting. '
             'If you have started it, please wait and try again. '
             'If not, please contact admin@ncompass.tech for support')
     raise RuntimeError(msg)

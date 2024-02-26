@@ -31,9 +31,9 @@ def model_is_running(url, api_key):
     else:
         return False
 
-def wait_until_model_running(url, api_key):
+def wait_until_model_running(url, api_key, timeout=20):
     break_loop = False
-    wait_until = datetime.now() + timedelta(seconds=10)
+    wait_until = datetime.now() + timedelta(seconds=timeout)
     while not break_loop:
         if model_is_running(url, api_key): break_loop = True
         if wait_until < datetime.now(): 

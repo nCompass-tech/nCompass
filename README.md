@@ -23,22 +23,27 @@ from ncompass.client import nCompassOLOC
 
 prompt = 'Give me 5 tools I can use to accelerate inference of my ML model?'
 api_key = '<api_key>'
+nCompassOLOC().start_session(api_key)
 for i in range(3):
-    nCompassOLOC().start_session(api_key)
     nCompassOLOC().complete_prompt(api_key, prompt, max_tokens = 300, temperature = 0.5
                                    , top_p = 0.9, stream = True, pprint = True)
-    nCompassOLOC().stop_session(api_key)
+nCompassOLOC().stop_session(api_key)
 ```
-The section below unwraps the code a bit more. It is still simple, but not quite OLOC'd.
+The section below unwraps the code a bit more. It is still simple, but not quite OLOC.
 
 ## More fine grained control 
-The following code (also found in examples/fine_grained_control.py) sets up an nCompass client, 
-parameters and calls the complete_prompt API. Our API returns a streaming iterator 
-(response_iterator) and we also provide a print_prompt function which can print out the stream.
+The following code (also found in *examples/fine_grained_control.py*) is an example of using the 
+nCompass client with more fine grained control. For instance: 
+- you could replace `client.wait_until_model_running()` with the non-blocking version 
+  `client.model_is_running()` which just returns a boolean. 
+- use a custom way to iterate through the response by replacing `client.print_prompt`. The
+  *examples/hello_world.py* file has an example (*use_streaming_iterator*) of extracting the 
+  iterator from our OLOC version as well
 ```
 from ncompass.client import nCompass
 
 # The client will automatically read the API key from the environment variable passed here.
+# Alternatively, you can directly pass the api_key to the client (see README.md)
 client = nCompass(custom_env_var = 'NCOMPASS_API_KEY')
 client.start_session()
 client.wait_until_model_running()
@@ -51,7 +56,6 @@ response_iterator = client.complete_prompt(prompt, params)
 client.print_prompt(response_iterator)
 client.stop_session()
 ```
-
 Note that here we read the API key from a custom environment variable NCOMPASS_API_KEY which you
 can set with the token we provide you. However, the API also works if you directly provide the API
 key to the client directly as below.
@@ -61,8 +65,8 @@ client = nCompass(api_key = '<key we provide you>')
 
 ## **IMPORTANT:** What are sessions?
 Sessions are how nCompass keeps track of usage statistics. nCompass billing is **not per_token** 
-but rather **time_based**. This means, your costs to use this does not scale linearly with your
-inputs. We simply charge you for the time between calls to start and stop session. 
+but rather **time_based**. This means, your costs do not scale linearly with your inputs. 
+We simply charge you for the time between calls to start and stop session. 
 
 There are two ways to start and stop sessions:
 - **Using the command line**: When you install the library via pip, you will have 3 command line
