@@ -67,12 +67,12 @@ inputs. We simply charge you for the time between calls to start and stop sessio
 There are two ways to start and stop sessions:
 - **Using the command line**: When you install the library via pip, you will have 3 command line
   calls available to you. 
-  - *nccli-help* : prints a help msg on how to use the cli commands
-  - *nccli-start-session <api_key>* : starts a session for that api_key
-  - *nccli-stop-session <api_key>* : stops a session for that api_key
+  - `nccli-help` : prints a help msg on how to use the cli commands
+  - `nccli-start-session <api_key>` : starts a session for that api_key
+  - `nccli-stop-session <api_key>` : stops a session for that api_key
 
 - **Programatically**: In all the examples above, the `start_session` and `stop_session` calls
   perform the tasks of starting and stopping sessions.
 
-**Please do not forget to stop sessions you have started, as billing occurs between starting and
-stopping sessions.**
+**Please do not forget to stop sessions you have started as billing occurs between the start and
+stop of a session.**
