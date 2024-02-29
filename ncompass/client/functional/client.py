@@ -21,9 +21,17 @@ def stop_session(url, api_key):
     return start_stop_handler(get(f'{url}/stop_session', {'Authorization': api_key}))
 
 def model_is_running(url, api_key):
-    response = check_model_health(url, api_key)
-    if (response.status_code == 404) or (response.status_code == 400):
-        raise RuntimeError(response.text) 
+    try: # this try-catch looks for network connectivity issues with running check_model_health
+        response = check_model_health(url, api_key)
+    except Exception :
+        return False
+    if (response.status_code == 404):
+        # Model is not in live models dictionary
+        return False
+    elif (response.status_code == 400):
+        # Model is in live models dictionary, but not started (this is fine, just need to start
+        # session)
+        return True
     elif response.status_code == 200:
         return True
     elif response.status_code == 504:
