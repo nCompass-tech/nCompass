@@ -24,7 +24,8 @@ class nCompass():
         if self.api_key is None: api_key_not_set(custom_env_var)
 
     def start_session(self):
-        return F.start_session(self.exec_url, self.api_key) 
+        F.start_session(self.exec_url, self.api_key) 
+        self.wait_until_model_running()
     
     def stop_session(self):
         return F.stop_session(self.exec_url, self.api_key) 
@@ -64,7 +65,6 @@ class nCompassOLOC():
     def start_session(cls, api_key):
         cls.start_client(api_key)
         cls.client.start_session()
-        print(f'Waiting for model {api_key} to start...')
         cls.client.wait_until_model_running()
     
     @classmethod
