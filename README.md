@@ -80,3 +80,60 @@ There are two ways to start and stop sessions:
 
 **Please do not forget to stop sessions you have started as billing occurs between the start and
 stop of a session.**
+
+## Note on thread safety
+nCompassOLOC client is **not thread safe**, but the nCompass client **is thread safe**. 
+So if you would like to use the client inside threads that you are spawning (for eg. when using
+a wsgi web frameworks like *flask*), then please only use the nCompass client.
+
+## Chat Completions
+The above examples focused on simple prompt completions. If you would like to use chat based
+completions with a custom template, please checkout the following example.
+
+```
+client = nCompass(api_key = <api_key>)
+client.start_session()
+client.wait_until_model_running()
+params = {'max_tokens':    300 # max output tokens requested
+          , 'temperature': 0.5
+          , 'top_p':       0.9
+          , 'stream':      True}
+messages = [
+    {
+        "role": "system",
+        "content": "You are the nCompass assistant, you are an expert in accelerating ML inference.",
+    },
+    {
+        "role": "assistant",
+        "content": "Hello, how can I speed up your ML inference today?",
+    },
+    {
+        "role": "user",
+        "content": "What tweaks can I make to my model to make it faster?",
+    },
+    {
+        "role": "assistant",
+        "content": "Ah, the age old question.",
+    },
+]
+response_iterator = client.complete_chat(messages=messages
+                                         , add_generation_prompt=True
+                                         , **params)
+client.print_prompt(response_iterator)
+client.stop_session()
+```
+The main changes from prompt completion is that we now use the `complete_chat` API instead of the
+`complete_prompt` API. For convenience, there is the equivalent `nCompassOLOC().complete_chat(...)`
+API as well. Also the argument name is no longer *prompt*, but rather *messages*.
+*add_generation_prompt* is also a boolean that can be passed through.
+
+The chat_template used is the chat_template specified in the model's tokenizer (if HF tokenizer is
+used). If you have a custom template you would like to pass through, there is support for that 
+that is in testing, so please contact either `aditya.rajagopal@ncompass.tech` or
+`diederik.vink@ncompass.tech` for information.
+
+## Batch Requests
+For both completions and chat, we support batch requests which is enabled by setting the 
+*stream* argument in params to False. 
+For *prompt*, the input can either be a single string or a list of strings.
+For *messages*, the input can either be a single list or a list of lists.
