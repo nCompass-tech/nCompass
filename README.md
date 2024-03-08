@@ -137,3 +137,15 @@ For both completions and chat, we support batch requests which is enabled by set
 *stream* argument in params to False. 
 For *prompt*, the input can either be a single string or a list of strings.
 For *messages*, the input can either be a single list or a list of lists.
+
+## Additional CLI-commands
+Further cli commands have been exposed to enable checking model status and starting and stopping 
+models (not sessions). *Starting and stopping models are slow commands and should not be used during 
+runtime.*
+  - `nccli-start-model <api_key>` : starts a model for that api_key
+  - `nccli-stop-model <api_key>` : stops a model for that api_key
+  - `nccli-model-status <api_key>` : gets model status for the api_key
+As they are slow running commands, they are by default not blocking. Which means after running
+`nccli-start-model` for instance, you have to keep querying the status using `nccli-model-status`
+in order to ensure that your model was started before running normal execution.
+
