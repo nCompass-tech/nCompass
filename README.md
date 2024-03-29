@@ -81,6 +81,34 @@ There are two ways to start and stop sessions:
 **Please do not forget to stop sessions you have started as billing occurs between the start and
 stop of a session.**
 
+## **IMPORTANT:** Cold-starts
+Our models will automatically shut down after ~2hours of inactivity. The current cold
+start time after model shutdown is a few minutes, so please raise this as a concern when we onboard
+you if you think your workload is so sparse that queries are spaced out by more than 2 hours. There
+are a few mitigation strategies to deal with preventing these cold starts listed below.
+
+### CLI commands for starting and stopping models
+If your model does get shut down due to lack of activity, use the following commands to launch your
+model up via our cli tools. These commands enable checking model status and starting and stopping 
+models (not sessions). *Starting and stopping models are slow commands and should not be used during 
+runtime.*
+  - `nccli-start-model <api_key>` : starts a model for that api_key
+  - `nccli-stop-model <api_key>` : stops a model for that api_key
+  - `nccli-model-status <api_key>` : gets model status for the api_key
+As they are slow running commands, they are by default not blocking. Which means after running
+`nccli-start-model` for instance, you have to keep querying the status using `nccli-model-status`
+in order to ensure that your model was started before running normal execution.
+
+You don't really have to worry about `nccli-stop-model` as we will auto shutdown models after 
+2 hours of inactivity, but if you know you're not going to be using your model for a while, running 
+`nccli-stop-model` out of good faith would be much appreciated :) 
+
+### Booking timeslots so we can ensure you model is up and running
+We are working on programatically exposing this, but for now if you know that you need a warm model
+for a certain time period during the day and definitely don't need traffic at other hours, just
+simply let us know when we onboard you / email us and we will ensure for those hours you don't have
+any cold starts.
+
 ## Note on thread safety
 nCompassOLOC client is **not thread safe**, but the nCompass client **is thread safe**. 
 So if you would like to use the client inside threads that you are spawning (for eg. when using
@@ -99,10 +127,6 @@ params = {'max_tokens':    300 # max output tokens requested
           , 'top_p':       0.9
           , 'stream':      True}
 messages = [
-    {
-        "role": "system",
-        "content": "You are the nCompass assistant, you are an expert in accelerating ML inference.",
-    },
     {
         "role": "assistant",
         "content": "Hello, how can I speed up your ML inference today?",
@@ -137,15 +161,4 @@ For both completions and chat, we support batch requests which is enabled by set
 *stream* argument in params to False. 
 For *prompt*, the input can either be a single string or a list of strings.
 For *messages*, the input can either be a single list or a list of lists.
-
-## Additional CLI-commands
-Further cli commands have been exposed to enable checking model status and starting and stopping 
-models (not sessions). *Starting and stopping models are slow commands and should not be used during 
-runtime.*
-  - `nccli-start-model <api_key>` : starts a model for that api_key
-  - `nccli-stop-model <api_key>` : stops a model for that api_key
-  - `nccli-model-status <api_key>` : gets model status for the api_key
-As they are slow running commands, they are by default not blocking. Which means after running
-`nccli-start-model` for instance, you have to keep querying the status using `nccli-model-status`
-in order to ensure that your model was started before running normal execution.
 
